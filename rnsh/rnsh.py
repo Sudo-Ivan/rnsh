@@ -86,6 +86,9 @@ def prepare_identity(identity_path, service_name: str = None) -> tuple[RNS.Ident
         log.info("No valid saved identity found, creating new...")
         identity = RNS.Identity()
         identity.to_file(identity_path)
+    
+    # Set this identity as the transport identity
+    RNS.Transport.identity = identity
     return identity
 
 
