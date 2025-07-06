@@ -53,7 +53,7 @@ jobs:
         run: poetry install --no-interaction --no-root
 
       - name: Run tests
-        run: poetry run pytest -m "not skip_ci" tests --timeout=300
+        run: poetry run pytest -m "not skip_ci" tests
 
       - name: Build package
         run: poetry build

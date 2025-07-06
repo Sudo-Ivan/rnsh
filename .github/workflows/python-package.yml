@@ -54,7 +54,7 @@ jobs:
         run: poetry run ruff check ./rnsh/
 
       - name: Run tests
-        run: poetry run pytest -m "not skip_ci" tests --timeout=300
+        run: poetry run pytest -m "not skip_ci" tests
 
 #      - name: Vulnerability check
 #        run: poetry run safety check
