@@ -2,6 +2,8 @@
 
 1. Updated dependencies
 2. Ruff formatting and fixes.
+3. Updated to use Python 3.13
+4. Update Workflows to use Github runners.
 
 
 # `r n s h`  Shell over Reticulum 
