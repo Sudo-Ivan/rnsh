@@ -25,35 +25,19 @@
 from __future__ import annotations
 
 import asyncio
-import base64
-import enum
-import functools
 import logging as __logging
 import os
-import queue
-import shlex
-import signal
-import sys
-import termios
-import threading
-import time
-import tty
-from typing import Callable, TypeVar
-import RNS
-import rnsh.exception as exception
-import rnsh.process as process
-import rnsh.retry as retry
-import rnsh.rnslogging as rnslogging
-import rnsh.session as session
 import re
-import contextlib
+import sys
+
+import RNS
+
 import rnsh.args
-import pwd
-import rnsh.protocol as protocol
-import rnsh.helpers as helpers
-import rnsh.loop
-import rnsh.listener as listener
 import rnsh.initiator as initiator
+import rnsh.listener as listener
+import rnsh.loop
+import rnsh.process as process
+import rnsh.rnslogging as rnslogging
 
 module_logger = __logging.getLogger(__name__)
 
@@ -86,14 +70,13 @@ def prepare_identity(identity_path, service_name: str = None) -> tuple[RNS.Ident
         log.info("No valid saved identity found, creating new...")
         identity = RNS.Identity()
         identity.to_file(identity_path)
-    
+
     # Set this identity as the transport identity
     RNS.Transport.identity = identity
     return identity
 
 
 def print_identity(configdir, identitypath, service_name, include_destination: bool):
-    reticulum = RNS.Reticulum(configdir=configdir, loglevel=RNS.LOG_INFO)
     if service_name and len(service_name) > 0:
         print(f"Using service name \"{service_name}\"")
     identity = prepare_identity(identitypath, service_name)
@@ -109,7 +92,6 @@ verbose_set = False
 
 async def _rnsh_cli_main():
     global verbose_set
-    log = _get_logger("main")
     _loop = asyncio.get_running_loop()
     rnslogging.set_main_loop(_loop)
     args = rnsh.args.Args(sys.argv)
@@ -121,7 +103,6 @@ async def _rnsh_cli_main():
 
     if args.listen:
         allowed_file = None
-        dest_len = (RNS.Reticulum.TRUNCATED_HASHLENGTH//8)*2
         if os.path.isfile(os.path.expanduser("~/.config/rnsh/allowed_identities")):
             allowed_file = os.path.expanduser("~/.config/rnsh/allowed_identities")
         elif os.path.isfile(os.path.expanduser("~/.rnsh/allowed_identities")):

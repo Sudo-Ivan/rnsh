@@ -1,6 +1,7 @@
 # Ivans Fork 
 
 1. Updated dependencies
+2. Ruff formatting and fixes.
 
 
 # `r n s h`  Shell over Reticulum 

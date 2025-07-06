@@ -1,10 +1,13 @@
-import tests.helpers
-import time
-import pytest
-import rnsh.process
 import asyncio
 import logging
 import multiprocessing.pool
+import time
+
+import pytest
+
+import rnsh.process
+import tests.helpers
+
 logging.getLogger().setLevel(logging.DEBUG)
 
 

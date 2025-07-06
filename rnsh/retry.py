@@ -22,14 +22,15 @@
 
 import asyncio
 import logging
+import logging as __logging
 import threading
 import time
-import rnsh.exception as exception
-import logging as __logging
-from typing import Callable
-from contextlib import AbstractContextManager
 import types
 import typing
+from contextlib import AbstractContextManager
+from typing import Callable
+
+import rnsh.exception as exception
 
 module_logger = __logging.getLogger(__name__)
 
@@ -148,11 +149,11 @@ class RetryThread(AbstractContextManager):
 
     def begin(self, try_limit: int, wait_delay: float, try_callback: Callable[[any, int], any],
               timeout_callback: Callable[[any, int], None]) -> any:
-        self._log.debug(f"running first try")
+        self._log.debug("running first try")
         tag = try_callback(None, 1)
         self._log.debug(f"first try got id {tag}")
         if not tag:
-            self._log.debug(f"callback returned None/False/0, considering complete.")
+            self._log.debug("callback returned None/False/0, considering complete.")
             return None
         with self._lock:
             if tag is None:
@@ -170,7 +171,7 @@ class RetryThread(AbstractContextManager):
     def complete(self, tag: any):
         assert tag is not None
         with self._lock:
-            status = next(filter(lambda l: l.tag == tag, self._statuses), None)
+            status = next(filter(lambda status: status.tag == tag, self._statuses), None)
             if status is not None:
                 status.completed = True
                 self._statuses.remove(status)

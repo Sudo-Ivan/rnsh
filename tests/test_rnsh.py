@@ -1,15 +1,18 @@
 import logging
+
 logging.getLogger().setLevel(logging.DEBUG)
 
-import tests.helpers
-import rnsh.rnsh
-import rnsh.process
-import shlex
-import pytest
-import time
 import asyncio
-import re
 import os
+import re
+import shlex
+import time
+
+import pytest
+
+import rnsh.process
+import rnsh.rnsh
+import tests.helpers
 
 
 def test_version():
@@ -21,7 +24,7 @@ def test_version():
 @pytest.mark.asyncio
 async def test_wrapper():
     with tests.helpers.tempdir() as td:
-        with tests.helpers.SubprocessReader(argv=shlex.split(f"date")) as wrapper:
+        with tests.helpers.SubprocessReader(argv=shlex.split("date")) as wrapper:
             wrapper.start()
             assert wrapper.process is not None
             assert wrapper.process.running

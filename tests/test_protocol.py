@@ -2,19 +2,11 @@ from __future__ import annotations
 
 import logging
 
-from RNS.Channel import TPacket, MessageState, ChannelOutletBase, Channel
-from typing import Callable
-
 logging.getLogger().setLevel(logging.DEBUG)
 
-import rnsh.protocol
-import contextlib
-import typing
-import types
-import time
-import uuid
-from RNS.Channel import MessageBase
 
+
+import rnsh.protocol
 
 module_logger = logging.getLogger(__name__)
 

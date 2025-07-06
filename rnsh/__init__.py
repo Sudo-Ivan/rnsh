@@ -21,6 +21,7 @@
 # SOFTWARE.
 
 import os
+
 module_abs_filename = os.path.abspath(__file__)
 module_dir = os.path.dirname(module_abs_filename)
 
@@ -37,15 +38,15 @@ def _get_version():
         if (os.path.isfile(os.path.join(os.path.dirname(module_dir), "pyproject.toml"))):
             try:
                 return tomli_version()
-            except:
+            except Exception:
                 return "0.0.0"
         else:
             try:
                 return pkg_res_version()
-            except:
+            except Exception:
                 return "0.0.0"
-                
-    except:
+
+    except Exception:
         return "0.0.0"
 
 __version__ = _get_version()

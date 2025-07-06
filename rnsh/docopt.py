@@ -6,8 +6,8 @@
  * Copyright (c) 2013 Vladimir Keleshev, vladimir@keleshev.com
 
 """
-import sys
 import re
+import sys
 
 __all__ = ['docopt']
 __version__ = '0.6.2'
@@ -153,8 +153,8 @@ class Argument(ChildPattern):
 
     @classmethod
     def parse(class_, source):
-        name = re.findall('(<\S*?>)', source)[0]
-        value = re.findall('\[default: (.*)\]', source, flags=re.I)
+        name = re.findall(r'(<\S*?>)', source)[0]
+        value = re.findall(r'\[default: (.*)\]', source, flags=re.I)
         return class_(name, value[0] if value else None)
 
 
@@ -195,7 +195,7 @@ class Option(ChildPattern):
             else:
                 argcount = 1
         if argcount:
-            matched = re.findall('\[default: (.*)\]', description, flags=re.I)
+            matched = re.findall(r'\[default: (.*)\]', description, flags=re.I)
             value = matched[0] if matched else None
         return class_(short, long, argcount, value)
 
@@ -218,13 +218,13 @@ class Required(ParentPattern):
 
     def match(self, left, collected=None):
         collected = [] if collected is None else collected
-        l = left
+        left = left
         c = collected
         for p in self.children:
-            matched, l, c = p.match(l, c)
+            matched, left, c = p.match(left, c)
             if not matched:
                 return False, left, collected
-        return True, l, c
+        return True, left, c
 
 
 class Optional(ParentPattern):
@@ -246,20 +246,20 @@ class OneOrMore(ParentPattern):
     def match(self, left, collected=None):
         assert len(self.children) == 1
         collected = [] if collected is None else collected
-        l = left
+        left = left
         c = collected
-        l_ = None
+        left_ = None
         matched = True
         times = 0
         while matched:
-            # could it be that something didn't match but changed l or c?
-            matched, l, c = self.children[0].match(l, c)
+            # could it be that something didn't match but changed left or c?
+            matched, left, c = self.children[0].match(left, c)
             times += 1 if matched else 0
-            if l_ == l:
+            if left_ == left:
                 break
-            l_ = l
+            left_ = left
         if times >= 1:
-            return True, l, c
+            return True, left, c
         return False, left, collected
 
 
@@ -429,7 +429,7 @@ def parse_argv(tokens, options, options_first=False):
 
 def parse_defaults(doc):
     # in python < 2.7 you can't pass flags=re.MULTILINE
-    split = re.split('\n *(<\S+?>|-\S+?)', doc)[1:]
+    split = re.split('\n *(<\\S+?>|-\\S+?)', doc)[1:]
     split = [s1 + s2 for s1, s2 in zip(split[::2], split[1::2])]
     options = [Option.parse(s) for s in split if s.startswith('-')]
     #arguments = [Argument.parse(s) for s in split if s.startswith('<')]

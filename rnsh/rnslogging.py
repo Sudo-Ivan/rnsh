@@ -24,14 +24,12 @@ import asyncio
 import logging
 import sys
 import termios
-import rnsh.process as process
 from logging import Handler, getLevelName
-# from types import GenericAlias
-from typing import Any
 
+# from types import GenericAlias
 import RNS
 
-import rnsh.exception as exception
+import rnsh.process as process
 
 
 class RnsHandler(Handler):
@@ -142,7 +140,7 @@ def _rns_log(msg, level=3, _override_destination=False):
                                                                termios.ONLRET | termios.ONLCR | termios.OPOST
                     tr.set_attr(attr)
                 _rns_log_orig(msg, level, _override_destination)
-        except:
+        except Exception:
             _rns_log_orig(msg, level, _override_destination)
 
     # TODO: figure out if forcing this to the main thread actually helps.
@@ -151,7 +149,7 @@ def _rns_log(msg, level=3, _override_destination=False):
             _loop.call_soon_threadsafe(_rns_log_inner)
         else:
             _rns_log_inner()
-    except:
+    except Exception:
         _rns_log_inner()
 
 

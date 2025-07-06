@@ -1,21 +1,21 @@
+import asyncio
+import contextlib
 import logging
+import os
+import pathlib
+import random
+import shutil
+import tempfile
+import threading
 import time
 import types
 import typing
-import tempfile
 
 import pytest
 
-import rnsh.rnsh
-import asyncio
 import rnsh.process
-import contextlib
-import threading
-import os
-import pathlib
+import rnsh.rnsh
 import tests
-import shutil
-import random
 
 module_logger = logging.getLogger(__name__)
 
@@ -52,7 +52,7 @@ class SubprocessReader(contextlib.AbstractContextManager):
             self._stdout.extend(data)
 
     def read(self):
-        self._log.debug(f"read()")
+        self._log.debug("read()")
         with self._lock:
             data = self._stdout.copy()
             self._stdout.clear()
@@ -65,7 +65,7 @@ class SubprocessReader(contextlib.AbstractContextManager):
             self._stderr.extend(data)
 
     def read_err(self):
-        self._log.debug(f"read_err()")
+        self._log.debug("read_err()")
         with self._lock:
             data = self._stderr.copy()
             self._stderr.clear()
@@ -77,11 +77,11 @@ class SubprocessReader(contextlib.AbstractContextManager):
         self.return_code = rc
 
     def start(self):
-        self._log.debug(f"start()")
+        self._log.debug("start()")
         self.process.start()
 
     def cleanup(self):
-        self._log.debug(f"cleanup()")
+        self._log.debug("cleanup()")
         if self.process and self.process.running:
             self.process.terminate(kill_delay=0.1)
         time.sleep(0.5)

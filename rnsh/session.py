@@ -1,21 +1,19 @@
 from __future__ import annotations
-import contextlib
-import functools
-import threading
-import rnsh.exception as exception
+
 import asyncio
-import rnsh.process as process
-import rnsh.helpers as helpers
-import rnsh.protocol as protocol
-import enum
-from typing import TypeVar, Generic, Callable, List
-from abc import abstractmethod, ABC
-from multiprocessing import Manager
-import os
 import bz2
+import contextlib
+import enum
+import functools
+import logging as __logging
+import os
+from abc import ABC, abstractmethod
+from typing import Callable, List, TypeVar
+
 import RNS
 
-import logging as __logging
+import rnsh.process as process
+import rnsh.protocol as protocol
 
 module_logger = __logging.getLogger(__name__)
 
@@ -46,24 +44,24 @@ _TIdentity = TypeVar("_TIdentity")
 class LSOutletBase(ABC):
     @abstractmethod
     def set_initiator_identified_callback(self, cb: Callable[[LSOutletBase, _TIdentity], None]):
-        raise NotImplemented()
+        raise NotImplementedError()
 
     @abstractmethod
     def set_link_closed_callback(self, cb: Callable[[LSOutletBase], None]):
-        raise NotImplemented()
+        raise NotImplementedError()
 
     @abstractmethod
     def unset_link_closed_callback(self):
-        raise NotImplemented()
+        raise NotImplementedError()
 
     @property
     @abstractmethod
     def rtt(self):
-        raise NotImplemented()
+        raise NotImplementedError()
 
     @abstractmethod
     def teardown(self):
-        raise NotImplemented()
+        raise NotImplementedError()
 
 
 class ListenerSession:
@@ -211,13 +209,11 @@ class ListenerSession:
             comp_tries = RNS.RawChannelWriter.COMPRESSION_TRIES
             comp_try = 1
             comp_success = False
-            
+
             chunk_len = len(buf)
             if chunk_len > RNS.RawChannelWriter.MAX_CHUNK_LEN:
                 chunk_len = RNS.RawChannelWriter.MAX_CHUNK_LEN
-            chunk_segment = None
 
-            chunk_segment = None
             max_data_len = self.channel.mdu - protocol.StreamDataMessage.OVERHEAD
             while chunk_len > 32 and comp_try < comp_tries:
                 chunk_segment_length = int(chunk_len/comp_try)
@@ -230,7 +226,6 @@ class ListenerSession:
                     comp_try += 1
 
             if comp_success:
-                diff = max_data_len - len(compressed_chunk)
                 chunk = compressed_chunk
                 processed_length = chunk_segment_length
             else:

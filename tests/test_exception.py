@@ -1,5 +1,7 @@
 import pytest
+
 import rnsh.exception as exception
+
 
 def test_permit():
     with pytest.raises(SystemExit):

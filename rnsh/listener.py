@@ -25,33 +25,22 @@
 from __future__ import annotations
 
 import asyncio
-import base64
-import enum
-import functools
 import logging as __logging
 import os
-import queue
+import pwd
 import shlex
 import signal
-import sys
-import termios
-import threading
 import time
-import tty
-from typing import Callable, TypeVar
+
 import RNS
-import rnsh.exception as exception
+
+import rnsh.args
+import rnsh.helpers as helpers
 import rnsh.process as process
 import rnsh.retry as retry
+import rnsh.rnsh
 import rnsh.rnslogging as rnslogging
 import rnsh.session as session
-import re
-import contextlib
-import rnsh.args
-import pwd
-import rnsh.protocol as protocol
-import rnsh.helpers as helpers
-import rnsh.rnsh
 
 module_logger = __logging.getLogger(__name__)
 
@@ -93,7 +82,7 @@ def _sigint_handler(sig, loop):
 def _reload_allowed_file():
     global _allowed_file, _allowed_file_identity_hashes
     log = _get_logger("_listen")
-    if _allowed_file != None:
+    if _allowed_file is not None:
         try:
             with open(_allowed_file, "r") as file:
                 dest_len = (RNS.Reticulum.TRUNCATED_HASHLENGTH // 8) * 2
@@ -174,7 +163,7 @@ async def listen(configdir, command, identitypath=None, service_name=None, verbo
                         raise ValueError(
                             "Allowed destination length is invalid, must be {hex} hexadecimal " +
                             "characters ({byte} bytes).".format(
-                                hex=dest_len, byte=dest_len // 2))
+                                byte=dest_len // 2))
                     try:
                         destination_hash = bytes.fromhex(a)
                         _allowed_identity_hashes.append(destination_hash)
@@ -220,7 +209,7 @@ async def listen(configdir, command, identitypath=None, service_name=None, verbo
         log.warning("Shutting down")
         await session.ListenerSession.terminate_all("Shutting down")
         await asyncio.sleep(1)
-        links_still_active = list(filter(lambda l: l.status != RNS.Link.CLOSED, _destination.links))
+        links_still_active = list(filter(lambda link: link.status != RNS.Link.CLOSED, _destination.links))
         for link in links_still_active:
             if link.status not in [RNS.Link.CLOSED]:
                 link.teardown()

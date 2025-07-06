@@ -1,7 +1,7 @@
-from typing import TypeVar
-import RNS
-import rnsh
 import sys
+from typing import TypeVar
+
+import rnsh
 from rnsh import docopt
 
 _T = TypeVar("_T")
@@ -75,7 +75,7 @@ class Args:
                     and len(self.program_args) > 0:
                 self.docopts_argv.append(self.program_args[0])
                 self.program_args = self.program_args[1:]
-    
+
             args = docopt.docopt(usage, argv=self.docopts_argv[1:], version=f"rnsh {rnsh.__version__}")
             # json.dump(args, sys.stdout)
 

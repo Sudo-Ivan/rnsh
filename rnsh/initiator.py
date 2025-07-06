@@ -25,34 +25,28 @@
 from __future__ import annotations
 
 import asyncio
-import base64
+import bz2
+import contextlib
 import enum
 import functools
 import logging as __logging
 import os
 import queue
-import shlex
 import signal
 import sys
 import termios
-import threading
 import time
-import tty
-from typing import Callable, TypeVar
+
 import RNS
-import rnsh.exception as exception
+
+import rnsh.args
+import rnsh.helpers as helpers
 import rnsh.process as process
+import rnsh.protocol as protocol
 import rnsh.retry as retry
+import rnsh.rnsh
 import rnsh.rnslogging as rnslogging
 import rnsh.session as session
-import re
-import contextlib
-import rnsh.args
-import pwd
-import bz2
-import rnsh.protocol as protocol
-import rnsh.helpers as helpers
-import rnsh.rnsh
 
 module_logger = __logging.getLogger(__name__)
 
@@ -89,11 +83,11 @@ def _sigint_handler(sig, loop):
 async def _spin_tty(until=None, msg=None, timeout=None):
     i = 0
     syms = "⢄⢂⢁⡁⡈⡐⡠"
-    if timeout != None:
+    if timeout is not None:
         timeout = time.time()+timeout
 
     print(msg+"  ", end=" ")
-    while (timeout == None or time.time()<timeout) and not until():
+    while (timeout is None or time.time()<timeout) and not until():
         await asyncio.sleep(0.1)
         print(("\b\b"+syms[i]+" "), end="")
         sys.stdout.flush()
@@ -101,7 +95,7 @@ async def _spin_tty(until=None, msg=None, timeout=None):
 
     print("\r"+" "*len(msg)+"  \r", end="")
 
-    if timeout != None and time.time() > timeout:
+    if timeout is not None and time.time() > timeout:
         return False
     else:
         return True
@@ -142,13 +136,11 @@ class InitiatorState(enum.IntEnum):
 
 
 def _client_link_closed(link):
-    log = _get_logger("_client_link_closed")
     if _finished:
         _finished.set()
 
 
 def _client_message_handler(message: RNS.MessageBase):
-    log = _get_logger("_client_message_handler")
     _pq.put(message)
 
 
@@ -169,7 +161,7 @@ async def _initiate_link(configdir, identitypath=None, verbosity=0, quietness=0,
                 hex=dest_len, byte=dest_len // 2))
     try:
         destination_hash = bytes.fromhex(destination)
-    except Exception as e:
+    except Exception:
         raise RemoteExecutionError("Invalid destination entered. Check your input.")
 
     if _reticulum is None:
@@ -182,7 +174,7 @@ async def _initiate_link(configdir, identitypath=None, verbosity=0, quietness=0,
 
     if not RNS.Transport.has_path(destination_hash):
         RNS.Transport.request_path(destination_hash)
-        log.info(f"Requesting path...")
+        log.info("Requesting path...")
         if not await _spin(until=lambda: RNS.Transport.has_path(destination_hash), msg="Requesting path...",
                            timeout=timeout, quiet=quietness > 0):
             raise RemoteExecutionError("Path not found")
@@ -203,7 +195,7 @@ async def _initiate_link(configdir, identitypath=None, verbosity=0, quietness=0,
 
         _link.set_link_closed_callback(_client_link_closed)
 
-    log.info(f"Establishing link...")
+    log.info("Establishing link...")
     if not await _spin(until=lambda: _link.status == RNS.Link.ACTIVE, msg="Establishing link...",
                        timeout=timeout, quiet=quietness > 0):
         raise RemoteExecutionError("Could not establish link with " + RNS.prettyhexrep(destination_hash))
@@ -328,12 +320,12 @@ async def initiate(configdir: str, identitypath: str, verbosity: int, quietness:
                                 line_buffer.pop(-1)
                                 blind_write_count -= 1
                                 os.write(1, "\b \b".encode("utf-8"))
-                        elif pre_esc == True and c == "~":
+                        elif pre_esc and c == "~":
                             pre_esc = False
                             esc = True
-                        elif esc == True:
+                        elif esc:
                             ret = handle_escape(c)
-                            if ret != None:
+                            if ret is not None:
                                 if ret != "~":
                                     data.append(ord("~"))
                                 data.append(ord(ret))
@@ -369,15 +361,15 @@ async def initiate(configdir: str, identitypath: str, verbosity: int, quietness:
         try:
             tcattr = termios.tcgetattr(0)
             rows, cols, hpix, vpix = process.tty_get_winsize(0)
-        except:
+        except Exception:
             try:
                 tcattr = termios.tcgetattr(1)
                 rows, cols, hpix, vpix = process.tty_get_winsize(1)
-            except:
+            except Exception:
                 try:
                     tcattr = termios.tcgetattr(2)
                     rows, cols, hpix, vpix = process.tty_get_winsize(2)
-                except:
+                except Exception:
                     pass
 
         await _spin(lambda: channel.is_ready_to_send(), "Waiting for channel...", 1, quietness > 0)
@@ -396,7 +388,6 @@ async def initiate(configdir: str, identitypath: str, verbosity: int, quietness:
         _finished = asyncio.Event()
         loop.add_signal_handler(signal.SIGINT, functools.partial(_sigint_handler, signal.SIGINT, loop))
         loop.add_signal_handler(signal.SIGTERM, functools.partial(_sigint_handler, signal.SIGTERM, loop))
-        mdu = _link.MDU - 16
         sent_eof = False
         last_winch = time.time()
         sleeper = helpers.SleepRate(0.01)
@@ -441,13 +432,11 @@ async def initiate(configdir: str, identitypath: str, verbosity: int, quietness:
                         comp_tries = RNS.RawChannelWriter.COMPRESSION_TRIES
                         comp_try = 1
                         comp_success = False
-                        
+
                         chunk_len = len(buf)
                         if chunk_len > RNS.RawChannelWriter.MAX_CHUNK_LEN:
                             chunk_len = RNS.RawChannelWriter.MAX_CHUNK_LEN
-                        chunk_segment = None
 
-                        chunk_segment = None
                         max_data_len = channel.mdu - protocol.StreamDataMessage.OVERHEAD
                         while chunk_len > 32 and comp_try < comp_tries:
                             chunk_segment_length = int(chunk_len/comp_try)
@@ -460,7 +449,6 @@ async def initiate(configdir: str, identitypath: str, verbosity: int, quietness:
                                 comp_try += 1
 
                         if comp_success:
-                            diff = max_data_len - len(compressed_chunk)
                             chunk = compressed_chunk
                             processed_length = chunk_segment_length
                         else:

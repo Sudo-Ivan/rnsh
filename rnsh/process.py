@@ -21,6 +21,7 @@
 # SOFTWARE.
 
 from __future__ import annotations
+
 import asyncio
 import contextlib
 import copy
@@ -79,7 +80,6 @@ def tty_read(fd: int) -> bytes:
         raise EOFError
 
     try:
-        run = True
         result = bytearray()
         while not fd_is_closed(fd):
             ready, _, _ = select.select([fd], [], [], 0)
@@ -105,7 +105,7 @@ def tty_read(fd: int) -> bytes:
         return result
     except EOFError:
         raise
-    except Exception as ex:
+    except Exception:
         module_logger.error("tty_read error: {ex}")
 
 
@@ -386,7 +386,7 @@ def _launch_child(cmd_line: list[str], env: dict[str, str], stdin_is_pipe: bool,
                 try:
                     tmp_fd = os.open(os.ttyname(0 if not stdin_is_pipe else 1 if not stdout_is_pipe else 2), os.O_RDWR)
                     os.close(tmp_fd)
-                except:
+                except Exception:
                     pass
                 # fcntl.ioctl(0 if not stdin_is_pipe else 1 if not stdout_is_pipe else 2), os.O_RDWR, termios.TIOCSCTTY, 0)
 
