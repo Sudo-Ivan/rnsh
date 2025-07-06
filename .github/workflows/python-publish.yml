@@ -20,47 +20,46 @@ permissions:
 
 jobs:
   deploy:
-
-    runs-on: [self-hosted, linux]
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
 
     steps:
-      - uses: actions/checkout@v2
+      - name: Checkout code
+        uses: actions/checkout@v4
         with:
           fetch-depth: 1
 
-      - name: Set up Python 3.9
+      - name: Set up Python 3.13
         uses: actions/setup-python@v4
         with:
-          python-version: 3.9
+          python-version: 3.13
 
-      - name: Install Poetry Action
+      - name: Install Poetry
         uses: snok/install-poetry@v1.3.3
- 
-
-      - name: Cache Poetry virtualenv
-        uses: actions/cache@v3
-        id: cache
         with:
-          path: ~/.virtualenvs
-          key: poetry-${{ hashFiles('**/poetry.lock') }}
-          restore-keys: |
-            poetry-${{ hashFiles('**/poetry.lock') }}
-            
+          version: latest
+          virtualenvs-create: true
+          virtualenvs-in-project: true
 
-      - name: Install Dependencies
-        run: poetry install
-        if: steps.cache.outputs.cache-hit != 'true'
+      - name: Load cached venv
+        id: cached-pip-dependencies
+        uses: actions/cache@v3
+        with:
+          path: .venv
+          key: venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('**/poetry.lock') }}
 
+      - name: Install dependencies
+        if: steps.cached-pip-dependencies.outputs.cache-hit != 'true'
+        run: poetry install --no-interaction --no-root
 
-      - name: Test with pytest
-        run: poetry run pytest -m "not skip_ci" tests
-        
-        
+      - name: Run tests
+        run: poetry run pytest -m "not skip_ci" tests --timeout=300
+
       - name: Build package
         run: poetry build
-        
+
       - name: Set Versions
-        uses: actions/github-script@v6.4.0
+        uses: actions/github-script@v7
         id: set_version
         with:
           script: |
@@ -71,40 +70,29 @@ jobs:
             core.setOutput('tag', tag)
             core.setOutput('no-v', no_v)
             core.setOutput('no-dash', no_dash)
-        
-        
-#       - name: Upload a Build Artifact
-#         uses: actions/upload-artifact@v3.1.2
-#         with:
-#           # Artifact name
-#           name: "pip package"
-#           # A file, directory or wildcard pattern that describes what to upload
-#           path: "dist/*"
-#           # The desired behavior if no files are found using the provided path.
-#           if-no-files-found: error
 
       - name: Create Release
         id: create_release
         uses: actions/create-release@v1
         env:
-          GITHUB_TOKEN: ${{ secrets.GH_API_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tag_name: ${{ github.ref }}
           release_name: ${{ steps.set_version.outputs.tag }}
           draft: true
           prerelease: false
-          
-      - name: Upload Release Artefact
+
+      - name: Upload Release Asset
         uses: actions/upload-release-asset@v1
         env:
-            GITHUB_TOKEN: ${{ secrets.GH_API_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: ./dist/rnsh-${{ steps.set_version.outputs.no-v }}-py3-none-any.whl
           asset_name: rnsh-${{ steps.set_version.outputs.no-v }}-py3-none-any.whl
           asset_content_type: application/zip
 
-
       - name: Publish to PyPI
+        if: secrets.PYPI_API_TOKEN
         run: poetry publish --username __token__ --password ${{ secrets.PYPI_API_TOKEN }}
         
