@@ -7,7 +7,7 @@ license = "MIT"
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = "^3.9"
+python = "^3.13"
 rns = ">=0.9.6"
 
 [tool.poetry.scripts]
@@ -19,6 +19,8 @@ setuptools = "^80.8.0"
 pytest-asyncio = "^0.26.0"
 safety = "^3.5.1"
 tomli = "^2.2.1"
+ruff = "^0.12.2"
+bandit = "^1.8.5"
 
 [tool.pytest.ini_options]
 markers = [
