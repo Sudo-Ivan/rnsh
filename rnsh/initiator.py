@@ -143,12 +143,14 @@ class InitiatorState(enum.IntEnum):
 
 def _client_link_closed(link):
     log = _get_logger("_client_link_closed")
+    log.debug(f"Link closed callback triggered. Link status: {link.status}")
     if _finished:
         _finished.set()
 
 
 def _client_message_handler(message: RNS.MessageBase):
     log = _get_logger("_client_message_handler")
+    log.debug(f"Received message: {type(message).__name__}")
     _pq.put(message)
 
 
@@ -204,14 +206,19 @@ async def _initiate_link(configdir, identitypath=None, verbosity=0, quietness=0,
         _link.set_link_closed_callback(_client_link_closed)
 
     log.info(f"Establishing link...")
+    log.debug(f"Link status before spin: {_link.status}")
     if not await _spin(until=lambda: _link.status == RNS.Link.ACTIVE, msg="Establishing link...",
                        timeout=timeout, quiet=quietness > 0):
+        log.error(f"Link establishment failed. Final link status: {_link.status}")
         raise RemoteExecutionError("Could not establish link with " + RNS.prettyhexrep(destination_hash))
 
     log.debug("Have link")
+    log.debug(f"Link status after establishment: {_link.status}")
     if not noid and not _link.did_identify:
+        log.debug("Identifying on link...")
         _link.identify(_identity)
         _link.did_identify = True
+        log.debug("Identification sent")
 
 
 async def _handle_error(errmsg: RNS.MessageBase):
