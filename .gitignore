@@ -1,7 +1,6 @@
 /venv/
 testconfig/
 /.idea/
-/poetry.lock
 /rnsh.egg-info/
 /build/
 /dist/
